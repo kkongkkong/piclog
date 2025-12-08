@@ -35,11 +35,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     console.log('Processing file:', filename)
 
-    // 파일명에서 timestamp 추출, 실패하면 현재 시간 사용
+    // 파일명에서 timestamp 추출, 실패하면 현재 시간 사용 (한국 시간)
     let timestamp = extractTimestamp(filename)
     if (!timestamp) {
-      console.log('Failed to extract timestamp from filename, using current time')
-      timestamp = new Date()
+      console.log('Failed to extract timestamp from filename, using current time (KST)')
+      // 한국 시간(UTC+9)으로 현재 시간 생성
+      const now = new Date()
+      const kstOffset = 9 * 60 * 60 * 1000 // 9시간을 밀리초로
+      const utcTime = now.getTime() + (now.getTimezoneOffset() * 60 * 1000)
+      timestamp = new Date(utcTime + kstOffset)
     }
 
     const hour = getHourFromTimestamp(timestamp)
