@@ -25,29 +25,40 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (REMOVEBG_API_KEY) {
       console.log('Using Remove.bg API')
 
-      const removeBgResponse = await fetch('https://api.remove.bg/v1.0/removebg', {
-        method: 'POST',
-        headers: {
-          'X-Api-Key': REMOVEBG_API_KEY,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          image_url: imageUrl,
-          size: 'auto',
-        }),
-      })
+      try {
+        const removeBgResponse = await fetch('https://api.remove.bg/v1.0/removebg', {
+          method: 'POST',
+          headers: {
+            'X-Api-Key': REMOVEBG_API_KEY,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            image_url: imageUrl,
+            size: 'auto',
+          }),
+        })
 
-      if (!removeBgResponse.ok) {
-        const errorText = await removeBgResponse.text()
-        console.error('Remove.bg API error:', errorText)
+        console.log('Remove.bg response status:', removeBgResponse.status)
+
+        if (!removeBgResponse.ok) {
+          const errorText = await removeBgResponse.text()
+          console.error('Remove.bg API error:', errorText)
+          return res.status(500).json({
+            success: false,
+            message: `Background removal failed: ${errorText}`
+          })
+        }
+
+        const arrayBuffer = await removeBgResponse.arrayBuffer()
+        buffer = Buffer.from(arrayBuffer)
+        console.log('Remove.bg API success, buffer size:', buffer.length)
+      } catch (fetchError: any) {
+        console.error('Remove.bg fetch error:', fetchError)
         return res.status(500).json({
           success: false,
-          message: `Background removal failed: ${errorText}`
+          message: `Fetch error: ${fetchError.message}`
         })
       }
-
-      const arrayBuffer = await removeBgResponse.arrayBuffer()
-      buffer = Buffer.from(arrayBuffer)
     }
     // Python 서버 사용 (로컬 환경)
     else {
