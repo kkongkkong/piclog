@@ -266,7 +266,7 @@ export default function Timeline({ refreshTrigger, currentDate, onDateChange }: 
         className="timeline-container"
         style={{
           minHeight: groupedPhotos.length > 0
-            ? `${(Math.max(...groupedPhotos.map(g => g.hour)) - Math.min(...groupedPhotos.map(g => g.hour)) + 1) * 150 + 100}px`
+            ? `${groupedPhotos.length * 150 + 100}px`
             : '600px'
         }}
         onContextMenu={(e) => handleContextMenu(e, 0)}
@@ -275,12 +275,10 @@ export default function Timeline({ refreshTrigger, currentDate, onDateChange }: 
         <div className="timeline-hours">
           {(() => {
             const minHour = groupedPhotos.length > 0 ? Math.min(...groupedPhotos.map(g => g.hour)) : 0;
-            const maxHour = groupedPhotos.length > 0 ? Math.max(...groupedPhotos.map(g => g.hour)) : 23;
-            const hours = [];
-            for (let i = minHour; i <= maxHour; i++) {
-              hours.push(<TimelineItem key={i} hour={i} startHour={minHour} />);
-            }
-            return hours;
+            // 사진이 있는 시간대만 표시
+            return groupedPhotos.map(({ hour }) => (
+              <TimelineItem key={hour} hour={hour} startHour={minHour} />
+            ));
           })()}
         </div>
 
