@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { supabase } from '@/lib/supabase'
 
+const REMOVEBG_API_KEY = process.env.REMOVEBG_API_KEY
 const PYTHON_SERVER_URL = process.env.PYTHON_BG_REMOVAL_URL || 'http://localhost:5000'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -15,39 +16,73 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ success: false, message: 'Missing required fields' })
     }
 
-    console.log('Calling Python server for background removal...')
+    console.log('Starting background removal...')
     console.log('Image URL:', imageUrl)
 
-    // Python 서버로 배경 제거 요청
-    const pythonResponse = await fetch(`${PYTHON_SERVER_URL}/remove-bg`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ image_url: imageUrl }),
-    })
+    let buffer: Buffer
 
-    if (!pythonResponse.ok) {
-      const errorData = await pythonResponse.json()
-      console.error('Python server error:', errorData)
-      return res.status(500).json({
-        success: false,
-        message: `Background removal failed: ${errorData.message || 'Unknown error'}`
+    // Remove.bg API 사용 (배포 환경)
+    if (REMOVEBG_API_KEY) {
+      console.log('Using Remove.bg API')
+
+      const formData = new FormData()
+      formData.append('image_url', imageUrl)
+      formData.append('size', 'auto')
+
+      const removeBgResponse = await fetch('https://api.remove.bg/v1.0/removebg', {
+        method: 'POST',
+        headers: {
+          'X-Api-Key': REMOVEBG_API_KEY,
+        },
+        body: formData,
       })
+
+      if (!removeBgResponse.ok) {
+        const errorText = await removeBgResponse.text()
+        console.error('Remove.bg API error:', errorText)
+        return res.status(500).json({
+          success: false,
+          message: `Background removal failed: ${errorText}`
+        })
+      }
+
+      const arrayBuffer = await removeBgResponse.arrayBuffer()
+      buffer = Buffer.from(arrayBuffer)
     }
+    // Python 서버 사용 (로컬 환경)
+    else {
+      console.log('Using local Python server')
 
-    const pythonResult = await pythonResponse.json()
-
-    if (!pythonResult.success) {
-      return res.status(500).json({
-        success: false,
-        message: pythonResult.message || 'Background removal failed'
+      const pythonResponse = await fetch(`${PYTHON_SERVER_URL}/remove-bg`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ image_url: imageUrl }),
       })
-    }
 
-    // Base64 이미지를 Supabase Storage에 업로드
-    const base64Data = pythonResult.image_base64.split(',')[1]
-    const buffer = Buffer.from(base64Data, 'base64')
+      if (!pythonResponse.ok) {
+        const errorData = await pythonResponse.json()
+        console.error('Python server error:', errorData)
+        return res.status(500).json({
+          success: false,
+          message: `Background removal failed: ${errorData.message || 'Unknown error'}`
+        })
+      }
+
+      const pythonResult = await pythonResponse.json()
+
+      if (!pythonResult.success) {
+        return res.status(500).json({
+          success: false,
+          message: pythonResult.message || 'Background removal failed'
+        })
+      }
+
+      // Base64 이미지를 Buffer로 변환
+      const base64Data = pythonResult.image_base64.split(',')[1]
+      buffer = Buffer.from(base64Data, 'base64')
+    }
 
     const fileName = `removed-bg/${photoId}_${Date.now()}.png`
 
