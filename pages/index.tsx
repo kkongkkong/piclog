@@ -116,7 +116,7 @@ export default function Home() {
           lineHeight: 1.4,
           padding: '12px 0',
         }}>
-          본 서비스에 업로드되는 모든 사진은 비공개 보안 저장소에 암호화되어 저장되며,
+          본 서비스에 업로드되는 모든 사진은 비공개 보안 저장소에 암호화되어 저장되며,<br />
           이용자 동의 없이 외부로 제공되지 않습니다.
         </p>
         <div className="copyright">
