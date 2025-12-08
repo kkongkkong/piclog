@@ -1,14 +1,23 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Head from 'next/head'
 import Timeline from '@/components/Timeline'
 import Calendar from '@/components/Calendar'
 import UploadBox from '@/components/UploadBox'
+import Onboarding from '@/components/Onboarding'
 
 export default function Home() {
   const [refreshTrigger, setRefreshTrigger] = useState(0)
   const [currentView, setCurrentView] = useState<'timeline' | 'calendar'>('timeline')
   const [currentDate, setCurrentDate] = useState(new Date())
   const [showTextModal, setShowTextModal] = useState(false)
+  const [showOnboarding, setShowOnboarding] = useState(false)
+
+  useEffect(() => {
+    const hasSeenOnboarding = localStorage.getItem('piclog_onboarding_seen')
+    if (!hasSeenOnboarding) {
+      setShowOnboarding(true)
+    }
+  }, [])
 
   const handleUploadSuccess = () => {
     setRefreshTrigger((prev) => prev + 1)
@@ -27,6 +36,11 @@ export default function Home() {
   const handleAddTextClick = () => {
     setCurrentView('timeline')
     setShowTextModal(true)
+  }
+
+  const handleOnboardingStart = () => {
+    localStorage.setItem('piclog_onboarding_seen', 'true')
+    setShowOnboarding(false)
   }
 
   return (
@@ -102,6 +116,8 @@ export default function Home() {
         </div>
       </footer>
     </div>
+
+    {showOnboarding && <Onboarding onStart={handleOnboardingStart} />}
     </>
   )
 }
