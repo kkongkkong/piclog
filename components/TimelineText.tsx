@@ -11,14 +11,14 @@ interface TextObject {
 
 interface TimelineTextProps {
   textObject: TextObject;
-  startHour?: number;
+  hourGroupIndex: number;
   onUpdate: (id: string, updates: any) => void;
   onDelete: (id: string) => void;
 }
 
-export default function TimelineText({ textObject, startHour = 0, onUpdate, onDelete }: TimelineTextProps) {
-  // 시간별 Y 위치 계산
-  const baseY = (textObject.hour - startHour) * 150;
+export default function TimelineText({ textObject, hourGroupIndex, onUpdate, onDelete }: TimelineTextProps) {
+  // 시간대 그룹 인덱스로 Y 위치 계산
+  const baseY = hourGroupIndex * 150;
 
   return (
     <Transformable

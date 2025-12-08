@@ -273,13 +273,9 @@ export default function Timeline({ refreshTrigger, currentDate, onDateChange }: 
       >
         {/* Timeline with hour markers */}
         <div className="timeline-hours">
-          {(() => {
-            const minHour = groupedPhotos.length > 0 ? Math.min(...groupedPhotos.map(g => g.hour)) : 0;
-            // 사진이 있는 시간대만 표시
-            return groupedPhotos.map(({ hour }) => (
-              <TimelineItem key={hour} hour={hour} startHour={minHour} />
-            ));
-          })()}
+          {groupedPhotos.map(({ hour }, index) => (
+            <TimelineItem key={hour} hour={hour} index={index} />
+          ))}
         </div>
 
         {/* Photos layer - absolute positioned */}
@@ -324,37 +320,34 @@ export default function Timeline({ refreshTrigger, currentDate, onDateChange }: 
             }
           }}
         >
-          {(() => {
-            const minHour = groupedPhotos.length > 0 ? Math.min(...groupedPhotos.map(g => g.hour)) : 0;
-            return groupedPhotos.flatMap(({ hour, photos }) =>
-              photos.map((p, index) => (
-                <TimelinePhoto
-                  key={p.id}
-                  photo={p}
-                  hour={hour}
-                  startHour={minHour}
-                  photoIndex={index}
-                  onUpdate={handlePhotoUpdate}
-                  onDelete={handlePhotoDelete}
-                  onRemoveBg={handlePhotoRemoveBg}
-                />
-              ))
-            );
-          })()}
+          {groupedPhotos.flatMap(({ hour, photos }, groupIndex) =>
+            photos.map((p, photoIndex) => (
+              <TimelinePhoto
+                key={p.id}
+                photo={p}
+                hourGroupIndex={groupIndex}
+                photoIndex={photoIndex}
+                onUpdate={handlePhotoUpdate}
+                onDelete={handlePhotoDelete}
+                onRemoveBg={handlePhotoRemoveBg}
+              />
+            ))
+          )}
 
           {/* text objects */}
-          {(() => {
-            const minHour = groupedPhotos.length > 0 ? Math.min(...groupedPhotos.map(g => g.hour)) : 0;
-            return textObjects.map((t) => (
+          {textObjects.map((t) => {
+            // 텍스트가 속한 시간대의 그룹 인덱스 찾기
+            const groupIndex = groupedPhotos.findIndex(g => g.hour === t.hour);
+            return (
               <TimelineText
                 key={t.id}
                 textObject={t}
-                startHour={minHour}
+                hourGroupIndex={groupIndex >= 0 ? groupIndex : 0}
                 onUpdate={handleTextUpdate}
                 onDelete={handleTextDelete}
               />
-            ));
-          })()}
+            );
+          })}
         </div>
       </div>
 

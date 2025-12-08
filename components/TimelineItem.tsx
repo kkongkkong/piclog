@@ -1,6 +1,6 @@
 // components/TimelineItem.tsx
-export default function TimelineItem({ hour, startHour = 0 }: { hour: number; startHour?: number }) {
-  const topPosition = (hour - startHour) * 150;
+export default function TimelineItem({ hour, index }: { hour: number; index: number }) {
+  const topPosition = index * 150;
 
   return (
     <div className="timeline-hour-item" style={{ top: `${topPosition}px` }}>
