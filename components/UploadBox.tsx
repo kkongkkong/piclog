@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import UploadModal from './UploadModal'
+import LoadingModal from './LoadingModal'
 
 interface UploadBoxProps {
   onUploadSuccess: () => void
@@ -8,6 +9,7 @@ interface UploadBoxProps {
 
 export default function UploadBox({ onUploadSuccess, currentDate }: UploadBoxProps) {
   const [showUploadModal, setShowUploadModal] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
 
   return (
     <>
@@ -23,9 +25,12 @@ export default function UploadBox({ onUploadSuccess, currentDate }: UploadBoxPro
         <UploadModal
           onClose={() => setShowUploadModal(false)}
           onUploadSuccess={onUploadSuccess}
+          onUploadingChange={setIsUploading}
           currentDate={currentDate}
         />
       )}
+
+      {isUploading && <LoadingModal message="사진 업로드 중" />}
     </>
   )
 }

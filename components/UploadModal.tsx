@@ -1,15 +1,14 @@
-import { useState, useRef } from 'react'
+import { useRef } from 'react'
 import { getGuestId } from '@/utils/guestId'
-import LoadingModal from './LoadingModal'
 
 interface UploadModalProps {
   onClose: () => void
   onUploadSuccess: () => void
+  onUploadingChange: (uploading: boolean) => void
   currentDate?: Date
 }
 
-export default function UploadModal({ onClose, onUploadSuccess, currentDate }: UploadModalProps) {
-  const [uploading, setUploading] = useState(false)
+export default function UploadModal({ onClose, onUploadSuccess, onUploadingChange, currentDate }: UploadModalProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFileSelect = () => {
@@ -28,7 +27,7 @@ export default function UploadModal({ onClose, onUploadSuccess, currentDate }: U
       return
     }
 
-    setUploading(true)
+    onUploadingChange(true)
     onClose()
 
     const guestId = getGuestId()
@@ -61,7 +60,7 @@ export default function UploadModal({ onClose, onUploadSuccess, currentDate }: U
         }
       }
 
-      setUploading(false)
+      onUploadingChange(false)
 
       if (successCount > 0) {
         onUploadSuccess()
@@ -75,7 +74,7 @@ export default function UploadModal({ onClose, onUploadSuccess, currentDate }: U
         fileInputRef.current.value = ''
       }
     } catch (error: any) {
-      setUploading(false)
+      onUploadingChange(false)
       alert(`업로드 오류: ${error.message}`)
     }
   }
@@ -114,8 +113,6 @@ export default function UploadModal({ onClose, onUploadSuccess, currentDate }: U
           </div>
         </div>
       </div>
-
-      {uploading && <LoadingModal message="사진이 업로드 중입니다..." />}
     </>
   )
 }
