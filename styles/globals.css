@@ -164,7 +164,6 @@ body {
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  height: 150px;
 }
 
 .timeline-hour-label {
@@ -177,7 +176,6 @@ body {
 .timeline-hour-line {
   width: 3px;
   background: #E0E0E0;
-  height: 120px; /* 150px에서 120px로 줄여서 30px 간격 생성 */
   border-radius: 2px;
 }
 

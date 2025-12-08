@@ -20,6 +20,7 @@ interface TimelineProps {
 interface GroupedPhotos {
   hour: number;
   photos: Photo[];
+  height?: number;
 }
 
 interface TextObject {
@@ -89,14 +90,15 @@ export default function Timeline({ refreshTrigger, currentDate, onDateChange, ex
       grouped[p.hour].push(p);
     });
 
-    setGroupedPhotos(
-      Object.entries(grouped)
-        .map(([hour, photos]) => ({
-          hour: Number(hour),
-          photos,
-        }))
-        .sort((a, b) => a.hour - b.hour)
-    );
+    const groupsWithHeight = Object.entries(grouped)
+      .map(([hour, photos]) => ({
+        hour: Number(hour),
+        photos,
+        height: 250, // 기본 높이: 사진 최대 크기(150px) + 여유(100px)
+      }))
+      .sort((a, b) => a.hour - b.hour);
+
+    setGroupedPhotos(groupsWithHeight);
 
     // 텍스트 객체 로드
     const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
@@ -347,16 +349,19 @@ export default function Timeline({ refreshTrigger, currentDate, onDateChange, ex
         className="timeline-container"
         style={{
           minHeight: groupedPhotos.length > 0
-            ? `${groupedPhotos.length * 150 + 100}px`
+            ? `${groupedPhotos.reduce((sum, g) => sum + (g.height || 250), 0) + 100}px`
             : '600px'
         }}
         onContextMenu={(e) => handleContextMenu(e, 0)}
       >
         {/* Timeline with hour markers */}
         <div className="timeline-hours">
-          {groupedPhotos.map(({ hour }, index) => (
-            <TimelineItem key={hour} hour={hour} index={index} />
-          ))}
+          {groupedPhotos.map(({ hour, height }, index) => {
+            const topPosition = groupedPhotos.slice(0, index).reduce((sum, g) => sum + (g.height || 250), 0);
+            return (
+              <TimelineItem key={hour} hour={hour} topPosition={topPosition} height={height || 250} />
+            );
+          })}
         </div>
 
         {/* Photos layer - absolute positioned */}
@@ -376,29 +381,33 @@ export default function Timeline({ refreshTrigger, currentDate, onDateChange, ex
             setShowTextModal(true);
           }}
         >
-          {groupedPhotos.flatMap(({ hour, photos }, groupIndex) =>
-            photos.map((p, photoIndex) => (
+          {groupedPhotos.flatMap(({ hour, photos }, groupIndex) => {
+            const baseY = groupedPhotos.slice(0, groupIndex).reduce((sum, g) => sum + (g.height || 250), 0);
+            return photos.map((p, photoIndex) => (
               <TimelinePhoto
                 key={p.id}
                 photo={p}
-                hourGroupIndex={groupIndex}
+                baseY={baseY}
                 photoIndex={photoIndex}
                 onUpdate={handlePhotoUpdate}
                 onDelete={handlePhotoDelete}
                 onRemoveBg={handlePhotoRemoveBg}
               />
-            ))
-          )}
+            ));
+          })}
 
           {/* text objects */}
           {textObjects.map((t) => {
             // 텍스트가 속한 시간대의 그룹 인덱스 찾기
             const groupIndex = groupedPhotos.findIndex(g => g.hour === t.hour);
+            const baseY = groupIndex >= 0
+              ? groupedPhotos.slice(0, groupIndex).reduce((sum, g) => sum + (g.height || 250), 0)
+              : 0;
             return (
               <TimelineText
                 key={t.id}
                 textObject={t}
-                hourGroupIndex={groupIndex >= 0 ? groupIndex : 0}
+                baseY={baseY}
                 onUpdate={handleTextUpdate}
                 onDelete={handleTextDelete}
               />

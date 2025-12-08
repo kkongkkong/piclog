@@ -13,15 +13,13 @@ interface TextObject {
 
 interface TimelineTextProps {
   textObject: TextObject;
-  hourGroupIndex: number;
+  baseY: number;
   onUpdate: (id: string, updates: any) => void;
   onDelete: (id: string) => void;
 }
 
-export default function TimelineText({ textObject, hourGroupIndex, onUpdate, onDelete }: TimelineTextProps) {
+export default function TimelineText({ textObject, baseY, onUpdate, onDelete }: TimelineTextProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  // 시간대 그룹 인덱스로 Y 위치 계산
-  const baseY = hourGroupIndex * 150;
 
   return (
     <>
