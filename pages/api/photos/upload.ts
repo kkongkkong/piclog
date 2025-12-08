@@ -44,9 +44,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const kstOffset = 9 * 60 * 60 * 1000 // 9시간을 밀리초로
       const utcTime = now.getTime() + (now.getTimezoneOffset() * 60 * 1000)
       timestamp = new Date(utcTime + kstOffset)
+      console.log('Generated KST timestamp:', timestamp.toISOString())
     }
 
     const hour = getHourFromTimestamp(timestamp)
+    console.log('Extracted hour:', hour, 'from timestamp:', timestamp.toISOString())
 
     // 시간대별 3장 초과 체크
     const { data: existingPhotos, error: countError } = await supabase
@@ -89,11 +91,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const fileUrl = urlData.publicUrl
 
     // DB에 저장
+    // timestamp를 한국 시간 기준으로 저장 (toISOString은 UTC로 변환하므로 조정 필요)
+    const kstTimestamp = new Date(timestamp.getTime() - (9 * 60 * 60 * 1000)).toISOString()
+    console.log('Saving to DB - Original KST:', timestamp, 'Adjusted for DB:', kstTimestamp)
+
     const { data: photoData, error: insertError } = await supabase
       .from('photos')
       .insert({
         file_url: fileUrl,
-        timestamp: timestamp.toISOString(),
+        timestamp: kstTimestamp,
         hour,
         user_id: guestId,
       })
