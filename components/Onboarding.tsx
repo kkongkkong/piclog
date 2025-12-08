@@ -10,13 +10,13 @@ export default function Onboarding({ onStart }: OnboardingProps) {
   const steps = [
     {
       icon: '📸',
-      title: '사진만 올리면 하루가 자동으로 정리돼요',
-      subtitle: '타임라인의 사진은 누르면 보기, 길게 눌러 순서 변경이 가능해요.',
+      title: '사진만 올리면 하루가\n자동으로 정리돼요',
+      subtitle: '타임라인 위 사진은 자유롭게 이동,확대,회전이 가능해요',
     },
     {
       icon: '✨',
-      title: '사진과 글을 자유롭게 꾸밀 수 있어요',
-      subtitle: '사진을 누르면 배경 제거, 스티커와 텍스트는 드래그·회전이 가능해요.',
+      title: '사진과 글로 자유롭게 꾸밀 수 있어요',
+      subtitle: '사진을 눌러 배경을 제거하고\n오늘을 기록하는 짧은 한 마디를 적어 보세요',
     },
   ]
 
@@ -34,11 +34,11 @@ export default function Onboarding({ onStart }: OnboardingProps) {
         <div key={currentStep} className="flex flex-col items-center text-center animate-fade-in">
           <div className="mb-8 text-7xl">{steps[currentStep].icon}</div>
 
-          <h2 className="mb-4 text-2xl font-bold leading-tight text-gray-900 dark:text-white">
+          <h2 className="mb-4 text-2xl font-bold leading-tight text-gray-900 dark:text-white whitespace-pre-line">
             {steps[currentStep].title}
           </h2>
 
-          <p className="mb-10 text-base leading-relaxed text-gray-600 dark:text-gray-300">
+          <p className="mb-10 text-base leading-relaxed text-gray-600 dark:text-gray-300 whitespace-pre-line">
             {steps[currentStep].subtitle}
           </p>
 
