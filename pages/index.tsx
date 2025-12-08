@@ -7,6 +7,7 @@ export default function Home() {
   const [refreshTrigger, setRefreshTrigger] = useState(0)
   const [currentView, setCurrentView] = useState<'timeline' | 'calendar'>('timeline')
   const [currentDate, setCurrentDate] = useState(new Date())
+  const [showTextModal, setShowTextModal] = useState(false)
 
   const handleUploadSuccess = () => {
     setRefreshTrigger((prev) => prev + 1)
@@ -22,6 +23,11 @@ export default function Home() {
     setCurrentView('timeline')
   }
 
+  const handleAddTextClick = () => {
+    setCurrentView('timeline')
+    setShowTextModal(true)
+  }
+
   return (
     <div className="app-container">
       <header className="app-header">
@@ -30,7 +36,13 @@ export default function Home() {
 
       <main className="app-main">
         {currentView === 'timeline' ? (
-          <Timeline refreshTrigger={refreshTrigger} currentDate={currentDate} onDateChange={setCurrentDate} />
+          <Timeline
+            refreshTrigger={refreshTrigger}
+            currentDate={currentDate}
+            onDateChange={setCurrentDate}
+            externalShowTextModal={showTextModal}
+            onTextModalClose={() => setShowTextModal(false)}
+          />
         ) : (
           <Calendar onDateSelect={handleDateSelect} currentDate={currentDate} />
         )}
@@ -45,6 +57,13 @@ export default function Home() {
           <span className="text-sm font-medium">캘린더 보기</span>
         </button>
         <UploadBox onUploadSuccess={handleUploadSuccess} />
+        <button
+          className="nav-button"
+          onClick={handleAddTextClick}
+        >
+          <span className="text-2xl">✏️</span>
+          <span className="text-sm font-medium">텍스트 추가</span>
+        </button>
         <button
           className="nav-button"
           onClick={handleTodayClick}

@@ -13,6 +13,8 @@ interface TimelineProps {
   refreshTrigger?: number;
   currentDate: Date;
   onDateChange: (date: Date) => void;
+  externalShowTextModal?: boolean;
+  onTextModalClose?: () => void;
 }
 
 interface GroupedPhotos {
@@ -29,7 +31,7 @@ interface TextObject {
   rotation: number;
 }
 
-export default function Timeline({ refreshTrigger, currentDate, onDateChange }: TimelineProps) {
+export default function Timeline({ refreshTrigger, currentDate, onDateChange, externalShowTextModal, onTextModalClose }: TimelineProps) {
   const [groupedPhotos, setGroupedPhotos] = useState<GroupedPhotos[]>([]);
   const [textObjects, setTextObjects] = useState<TextObject[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,6 +39,16 @@ export default function Timeline({ refreshTrigger, currentDate, onDateChange }: 
   const [contextMenuHour, setContextMenuHour] = useState<number | null>(null);
   const [isRemovingBg, setIsRemovingBg] = useState(false);
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+
+  // 외부에서 텍스트 모달 열기
+  useEffect(() => {
+    if (externalShowTextModal) {
+      // 첫 번째 사진이 있는 시간대 또는 현재 시간
+      const hour = groupedPhotos.length > 0 ? groupedPhotos[0].hour : new Date().getHours();
+      setContextMenuHour(hour);
+      setShowTextModal(true);
+    }
+  }, [externalShowTextModal, groupedPhotos]);
 
   /** -------------------------------
    * 📌 1. Load Timeline
@@ -86,6 +98,25 @@ export default function Timeline({ refreshTrigger, currentDate, onDateChange }: 
         .sort((a, b) => a.hour - b.hour)
     );
 
+    // 텍스트 객체 로드
+    const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
+    const { data: textData, error: textError } = await supabase
+      .from("text_objects")
+      .select("*")
+      .eq("user_id", guestId)
+      .eq("date", dateStr);
+
+    if (!textError && textData) {
+      setTextObjects(textData.map((t: any) => ({
+        id: t.id,
+        hour: t.hour,
+        text: t.text,
+        position: t.position || { x: 100, y: 50 },
+        scale: t.scale || 1,
+        rotation: t.rotation || 0,
+      })));
+    }
+
     setLoading(false);
   };
 
@@ -98,31 +129,81 @@ export default function Timeline({ refreshTrigger, currentDate, onDateChange }: 
     setShowTextModal(true);
   };
 
-  const handleAddText = (text: string) => {
+  const handleAddText = async (text: string) => {
     if (!text.trim() || contextMenuHour === null) return;
 
-    const newText: TextObject = {
-      id: `text-${Date.now()}`,
-      hour: contextMenuHour,
-      text: text.trim(),
-      position: { x: 100, y: 50 },
-      scale: 1,
-      rotation: 0,
-    };
+    const guestId = getGuestId();
+    const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
 
-    console.log('Adding new text:', newText);
-    setTextObjects((prev) => [...prev, newText]);
+    const { data, error } = await supabase
+      .from("text_objects")
+      .insert({
+        user_id: guestId,
+        hour: contextMenuHour,
+        text: text.trim(),
+        position: { x: 100, y: 50 },
+        scale: 1,
+        rotation: 0,
+        date: dateStr,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error adding text:', error);
+      alert('텍스트 추가 실패');
+      return;
+    }
+
+    if (data) {
+      const newText: TextObject = {
+        id: data.id,
+        hour: data.hour,
+        text: data.text,
+        position: data.position || { x: 100, y: 50 },
+        scale: data.scale || 1,
+        rotation: data.rotation || 0,
+      };
+      setTextObjects((prev) => [...prev, newText]);
+    }
+
     setShowTextModal(false);
     setContextMenuHour(null);
   };
 
-  const handleTextUpdate = (id: string, updates: Partial<TextObject>) => {
+  const handleTextUpdate = async (id: string, updates: Partial<TextObject>) => {
+    // DB 업데이트
+    const { error } = await supabase
+      .from("text_objects")
+      .update({
+        position: updates.position,
+        scale: updates.scale,
+        rotation: updates.rotation,
+      })
+      .eq("id", id);
+
+    if (error) {
+      console.error('Error updating text:', error);
+      return;
+    }
+
+    // 로컬 상태 업데이트
     setTextObjects((prev) =>
       prev.map((t) => (t.id === id ? { ...t, ...updates } : t))
     );
   };
 
-  const handleTextDelete = (id: string) => {
+  const handleTextDelete = async (id: string) => {
+    const { error } = await supabase
+      .from("text_objects")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      console.error('Error deleting text:', error);
+      return;
+    }
+
     setTextObjects((prev) => prev.filter((t) => t.id !== id));
   };
 
@@ -294,31 +375,6 @@ export default function Timeline({ refreshTrigger, currentDate, onDateChange }: 
             setContextMenuHour(targetHour);
             setShowTextModal(true);
           }}
-          onTouchStart={(e) => {
-            const minHour = groupedPhotos.length > 0 ? Math.min(...groupedPhotos.map(g => g.hour)) : 0;
-            const rect = e.currentTarget.getBoundingClientRect();
-            const touch = e.touches[0];
-            const clickY = touch.clientY - rect.top;
-            const hourIndex = Math.floor(clickY / 150);
-            const targetHour = minHour + hourIndex;
-
-            longPressTimer.current = setTimeout(() => {
-              setContextMenuHour(targetHour);
-              setShowTextModal(true);
-            }, 600);
-          }}
-          onTouchEnd={() => {
-            if (longPressTimer.current) {
-              clearTimeout(longPressTimer.current);
-              longPressTimer.current = null;
-            }
-          }}
-          onTouchMove={() => {
-            if (longPressTimer.current) {
-              clearTimeout(longPressTimer.current);
-              longPressTimer.current = null;
-            }
-          }}
         >
           {groupedPhotos.flatMap(({ hour, photos }, groupIndex) =>
             photos.map((p, photoIndex) => (
@@ -358,6 +414,7 @@ export default function Timeline({ refreshTrigger, currentDate, onDateChange }: 
           onClose={() => {
             setShowTextModal(false);
             setContextMenuHour(null);
+            onTextModalClose?.();
           }}
         />
       )}

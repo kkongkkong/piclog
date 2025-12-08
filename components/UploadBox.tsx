@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react'
 import { getGuestId } from '@/utils/guestId'
+import LoadingModal from './LoadingModal'
 
 interface UploadBoxProps {
   onUploadSuccess: () => void
@@ -99,6 +100,9 @@ export default function UploadBox({ onUploadSuccess }: UploadBoxProps) {
           className="hidden"
         />
       </label>
+
+      {/* 업로드 중 모달 */}
+      {uploading && <LoadingModal message="사진이 업로드 중입니다..." />}
 
       {/* 업로드 완료 모달 */}
       {showModal && (

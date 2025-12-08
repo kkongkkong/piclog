@@ -245,19 +245,25 @@ export default function Transformable({
 
     if (e.touches.length === 2) {
       e.preventDefault();
+      e.stopPropagation();
 
-      // 핀치 줌
+      // 핀치 줌 (더 민감하게)
       const distance = getTouchDistance(e.touches);
       const scaleDelta = distance / lastTouchDistance.current;
-      applyTransform({ scale: Math.max(0.3, Math.min(3, transform.scale * scaleDelta)) });
+      const newScale = Math.max(0.3, Math.min(3, transform.scale * scaleDelta));
       lastTouchDistance.current = distance;
 
-      // 회전
+      // 회전 (더 부드럽게)
       const angle = getTouchAngle(e.touches);
       const angleDelta = angle - lastTouchAngle.current;
-      applyTransform({ rotation: transform.rotation + angleDelta });
       lastTouchAngle.current = angle;
+
+      applyTransform({
+        scale: newScale,
+        rotation: transform.rotation + angleDelta
+      });
     } else if (e.touches.length === 1 && interactionMode === 'move') {
+      e.preventDefault();
       applyTransform({
         x: e.touches[0].clientX - dragStart.current.x,
         y: e.touches[0].clientY - dragStart.current.y,
@@ -301,6 +307,8 @@ export default function Transformable({
             outlineOffset: "4px",
             userSelect: "none",
             background: "transparent",
+            touchAction: "none",
+            WebkitTouchCallout: "none",
           } as React.CSSProperties}
         >
           {typeof children === 'function' ? children(selected) : children}
@@ -407,6 +415,8 @@ export default function Transformable({
           outlineOffset: "4px",
           userSelect: "none",
           background: "transparent",
+          touchAction: "none",
+          WebkitTouchCallout: "none",
         } as React.CSSProperties}
       >
         {typeof children === 'function' ? children(selected) : children}
