@@ -1,4 +1,6 @@
+import { useState } from "react";
 import Transformable from "./Transformable";
+import DeleteConfirmModal from "./DeleteConfirmModal";
 
 interface TextObject {
   id: string;
@@ -17,10 +19,12 @@ interface TimelineTextProps {
 }
 
 export default function TimelineText({ textObject, hourGroupIndex, onUpdate, onDelete }: TimelineTextProps) {
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   // 시간대 그룹 인덱스로 Y 위치 계산
   const baseY = hourGroupIndex * 150;
 
   return (
+    <>
     <Transformable
       id={textObject.id}
       isTimeline={false}
@@ -38,7 +42,7 @@ export default function TimelineText({ textObject, hourGroupIndex, onUpdate, onD
                 className="timeline-action-btn delete"
                 onClick={(e) => {
                   e.stopPropagation();
-                  onDelete(textObject.id);
+                  setShowDeleteConfirm(true);
                 }}
               >
                 삭제
@@ -51,5 +55,16 @@ export default function TimelineText({ textObject, hourGroupIndex, onUpdate, onD
         </div>
       )}
     </Transformable>
+
+    {showDeleteConfirm && (
+      <DeleteConfirmModal
+        onConfirm={() => {
+          setShowDeleteConfirm(false);
+          onDelete(textObject.id);
+        }}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
+    )}
+    </>
   );
 }
