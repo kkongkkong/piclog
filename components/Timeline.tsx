@@ -4,6 +4,7 @@ import TimelineItem from "./TimelineItem";
 import TimelinePhoto from "./TimelinePhoto";
 import TimelineText from "./TimelineText";
 import TextInputModal from "./TextInputModal";
+import LoadingModal from "./LoadingModal";
 import { Photo } from "@/lib/types";
 import { supabase } from "@/lib/supabase";
 import { getGuestId } from "@/utils/guestId";
@@ -34,6 +35,7 @@ export default function Timeline({ refreshTrigger, currentDate, onDateChange }: 
   const [loading, setLoading] = useState(true);
   const [showTextModal, setShowTextModal] = useState(false);
   const [contextMenuHour, setContextMenuHour] = useState<number | null>(null);
+  const [isRemovingBg, setIsRemovingBg] = useState(false);
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
 
   /** -------------------------------
@@ -155,6 +157,7 @@ export default function Timeline({ refreshTrigger, currentDate, onDateChange }: 
 
   const handlePhotoRemoveBg = async (photoId: string, url: string) => {
     try {
+      setIsRemovingBg(true);
       console.log("Removing background for:", photoId, url);
       const res = await fetch("/api/photos/remove-bg", {
         method: "POST",
@@ -163,6 +166,7 @@ export default function Timeline({ refreshTrigger, currentDate, onDateChange }: 
       });
       const json = await res.json();
       console.log("Remove BG response:", json);
+      setIsRemovingBg(false);
       if (json.success) {
         loadTimeline();
       } else {
@@ -170,6 +174,7 @@ export default function Timeline({ refreshTrigger, currentDate, onDateChange }: 
       }
     } catch (error) {
       console.error("Remove BG error:", error);
+      setIsRemovingBg(false);
       alert("배경 제거 중 오류가 발생했습니다.");
     }
   };
@@ -365,6 +370,9 @@ export default function Timeline({ refreshTrigger, currentDate, onDateChange }: 
           }}
         />
       )}
+
+      {/* loading modal */}
+      {isRemovingBg && <LoadingModal message="배경을 제거하고 있습니다..." />}
     </div>
   );
 }
