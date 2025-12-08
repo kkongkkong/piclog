@@ -109,6 +109,16 @@ export default function Home() {
             → 의견 보내기
           </a>
         </div>
+        <p style={{
+          fontSize: '11px',
+          fontWeight: 400,
+          color: 'rgba(0,0,0,0.45)',
+          lineHeight: 1.4,
+          padding: '12px 0',
+        }}>
+          본 서비스에 업로드되는 모든 사진은 비공개 보안 저장소에 암호화되어 저장되며,
+          이용자 동의 없이 외부로 제공되지 않습니다.
+        </p>
         <div className="copyright">
           © 2025 <strong>Piclog</strong> — Photo Timeline Memory.<br />
           Designed & Developed by <strong>kong</strong>.<br />
