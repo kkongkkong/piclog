@@ -25,16 +25,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (REMOVEBG_API_KEY) {
       console.log('Using Remove.bg API')
 
-      const formData = new FormData()
-      formData.append('image_url', imageUrl)
-      formData.append('size', 'auto')
-
       const removeBgResponse = await fetch('https://api.remove.bg/v1.0/removebg', {
         method: 'POST',
         headers: {
           'X-Api-Key': REMOVEBG_API_KEY,
+          'Content-Type': 'application/json',
         },
-        body: formData,
+        body: JSON.stringify({
+          image_url: imageUrl,
+          size: 'auto',
+        }),
       })
 
       if (!removeBgResponse.ok) {
