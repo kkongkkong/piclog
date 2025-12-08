@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import Head from 'next/head'
 import Timeline from '@/components/Timeline'
 import Calendar from '@/components/Calendar'
 import UploadBox from '@/components/UploadBox'
@@ -29,10 +30,16 @@ export default function Home() {
   }
 
   return (
-    <div className="app-container">
-      <header className="app-header">
-        <h1>Piclog</h1>
-      </header>
+    <>
+      <Head>
+        <title>Piclog - Photo Timeline Memory</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+        <meta name="theme-color" content="#FFD700" />
+      </Head>
+      <div className="app-container">
+        <header className="app-header">
+          <h1>Piclog</h1>
+        </header>
 
       <main className="app-main">
         {currentView === 'timeline' ? (
@@ -56,7 +63,7 @@ export default function Home() {
           <span className="text-2xl">📆</span>
           <span className="text-sm font-medium">캘린더 보기</span>
         </button>
-        <UploadBox onUploadSuccess={handleUploadSuccess} />
+        <UploadBox onUploadSuccess={handleUploadSuccess} currentDate={currentDate} />
         <button
           className="nav-button"
           onClick={handleAddTextClick}
@@ -95,5 +102,6 @@ export default function Home() {
         </div>
       </footer>
     </div>
+    </>
   )
 }

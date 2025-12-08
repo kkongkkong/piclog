@@ -4,9 +4,10 @@ import LoadingModal from './LoadingModal'
 
 interface UploadBoxProps {
   onUploadSuccess: () => void
+  currentDate?: Date
 }
 
-export default function UploadBox({ onUploadSuccess }: UploadBoxProps) {
+export default function UploadBox({ onUploadSuccess, currentDate }: UploadBoxProps) {
   const [uploading, setUploading] = useState(false)
   const [message, setMessage] = useState('')
   const [showModal, setShowModal] = useState(false)
@@ -33,6 +34,11 @@ export default function UploadBox({ onUploadSuccess }: UploadBoxProps) {
         const formData = new FormData()
         formData.append('file', file)
         formData.append('guestId', guestId)
+
+        // 선택된 날짜 전달 (없으면 현재 날짜)
+        if (currentDate) {
+          formData.append('targetDate', currentDate.toISOString())
+        }
 
         const response = await fetch('/api/photos/upload', {
           method: 'POST',

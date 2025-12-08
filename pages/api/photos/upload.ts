@@ -31,20 +31,40 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     const guestId = fields.guestId?.[0] || 'guest'
+    const targetDateStr = fields.targetDate?.[0] // 선택된 날짜
     const filename = file.originalFilename || 'unknown.jpg'
 
     console.log('Processing file:', filename)
+    console.log('Target date:', targetDateStr)
 
-    // 파일명에서 timestamp 추출, 실패하면 현재 시간 사용 (한국 시간)
+    // 파일명에서 timestamp 추출, 실패하면 targetDate 또는 현재 시간 사용
     let timestamp = extractTimestamp(filename)
     if (!timestamp) {
-      console.log('Failed to extract timestamp from filename, using current time (KST)')
-      // 한국 시간(UTC+9)으로 현재 시간 생성
-      const now = new Date()
-      const kstOffset = 9 * 60 * 60 * 1000 // 9시간을 밀리초로
-      const utcTime = now.getTime() + (now.getTimezoneOffset() * 60 * 1000)
-      timestamp = new Date(utcTime + kstOffset)
-      console.log('Generated KST timestamp:', timestamp.toISOString())
+      if (targetDateStr) {
+        // targetDate가 있으면 해당 날짜의 현재 시간 사용
+        console.log('Using target date from user selection')
+        const targetDate = new Date(targetDateStr)
+        const now = new Date()
+
+        // targetDate의 날짜에 현재 시간을 조합
+        timestamp = new Date(
+          targetDate.getFullYear(),
+          targetDate.getMonth(),
+          targetDate.getDate(),
+          now.getHours(),
+          now.getMinutes(),
+          now.getSeconds()
+        )
+        console.log('Generated timestamp from target date:', timestamp.toISOString())
+      } else {
+        // targetDate도 없으면 현재 시간 사용 (한국 시간)
+        console.log('Failed to extract timestamp from filename, using current time (KST)')
+        const now = new Date()
+        const kstOffset = 9 * 60 * 60 * 1000 // 9시간을 밀리초로
+        const utcTime = now.getTime() + (now.getTimezoneOffset() * 60 * 1000)
+        timestamp = new Date(utcTime + kstOffset)
+        console.log('Generated KST timestamp:', timestamp.toISOString())
+      }
     }
 
     const hour = getHourFromTimestamp(timestamp)
