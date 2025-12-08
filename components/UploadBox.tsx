@@ -94,7 +94,7 @@ export default function UploadBox({ onUploadSuccess, currentDate }: UploadBoxPro
         style={{ cursor: uploading ? 'not-allowed' : 'pointer' }}
       >
         <span className="text-3xl">➕</span>
-        <span className="text-sm font-medium">사진 추가하기</span>
+        <span className="text-sm font-medium whitespace-nowrap">사진 추가하기</span>
         <input
           id="file-upload"
           ref={fileInputRef}
