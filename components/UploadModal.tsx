@@ -10,8 +10,6 @@ interface UploadModalProps {
 
 export default function UploadModal({ onClose, onUploadSuccess, currentDate }: UploadModalProps) {
   const [uploading, setUploading] = useState(false)
-  const [showSuccessModal, setShowSuccessModal] = useState(false)
-  const [successMessage, setSuccessMessage] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFileSelect = () => {
@@ -24,10 +22,14 @@ export default function UploadModal({ onClose, onUploadSuccess, currentDate }: U
 
     if (files.length > 3) {
       alert('최대 3장까지 업로드 가능합니다.')
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
       return
     }
 
     setUploading(true)
+    onClose()
 
     const guestId = getGuestId()
     let successCount = 0
@@ -62,14 +64,7 @@ export default function UploadModal({ onClose, onUploadSuccess, currentDate }: U
       setUploading(false)
 
       if (successCount > 0) {
-        setSuccessMessage(`${successCount}개 사진 업로드 완료!`)
-        setShowSuccessModal(true)
         onUploadSuccess()
-
-        setTimeout(() => {
-          setShowSuccessModal(false)
-          onClose()
-        }, 2000)
       }
 
       if (errorMessages.length > 0) {
@@ -121,17 +116,6 @@ export default function UploadModal({ onClose, onUploadSuccess, currentDate }: U
       </div>
 
       {uploading && <LoadingModal message="사진이 업로드 중입니다..." />}
-
-      {showSuccessModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[10000]">
-          <div className="bg-white rounded-xl p-6 shadow-2xl max-w-sm mx-4 animate-fade-in">
-            <div className="text-center">
-              <div className="text-4xl mb-3">✅</div>
-              <p className="text-lg font-semibold text-gray-800">{successMessage}</p>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   )
 }
