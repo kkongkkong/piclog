@@ -1,6 +1,22 @@
 import Transformable from "./Transformable";
 
-export default function TimelineText({ textObject, startHour = 0, onUpdate, onDelete }) {
+interface TextObject {
+  id: string;
+  hour: number;
+  text: string;
+  position: { x: number; y: number };
+  scale: number;
+  rotation: number;
+}
+
+interface TimelineTextProps {
+  textObject: TextObject;
+  startHour?: number;
+  onUpdate: (id: string, updates: any) => void;
+  onDelete: (id: string) => void;
+}
+
+export default function TimelineText({ textObject, startHour = 0, onUpdate, onDelete }: TimelineTextProps) {
   // 시간별 Y 위치 계산
   const baseY = (textObject.hour - startHour) * 150;
 
