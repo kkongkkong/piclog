@@ -300,7 +300,7 @@ export default function Transformable({
             outline: selected ? "2px solid #FFD700" : "none",
             outlineOffset: "4px",
             userSelect: "none",
-            WebkitUserDrag: "none",
+            WebkitUserDrag: "none" as any,
             background: "transparent",
           }}
         >
