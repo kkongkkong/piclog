@@ -5,6 +5,7 @@ export interface Photo {
   hour: number
   user_id: string
   is_bg_removed?: boolean
+  original_url?: string  // 배경제거 전 원본 URL (원복용)
   position?: {
     x: number
     y: number

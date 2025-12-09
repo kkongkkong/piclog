@@ -249,6 +249,16 @@ body {
   background: #f5f5f5;
 }
 
+.timeline-action-btn.restore {
+  background: #007AFF;
+  color: white;
+  border-color: #007AFF;
+}
+
+.timeline-action-btn.restore:hover {
+  background: #0051D5;
+}
+
 .timeline-action-btn.delete {
   background: #ff3b30;
   color: white;

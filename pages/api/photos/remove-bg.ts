@@ -97,14 +97,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const fileName = `removed-bg/${photoId}_${Date.now()}.png`
 
-    // 원본 사진의 user_id 가져오기
+    // 원본 사진의 user_id와 file_url 가져오기
     const { data: photoData } = await supabase
       .from('photos')
-      .select('user_id')
+      .select('user_id, file_url')
       .eq('id', photoId)
       .single()
 
     const userId = photoData?.user_id || 'guest'
+    const originalUrl = photoData?.file_url  // 원본 URL 백업
 
     // Supabase Storage에 업로드
     const { data: uploadData, error: uploadError } = await supabase.storage
@@ -131,12 +132,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     console.log('Background removed image URL:', bgRemovedUrl)
 
-    // DB 업데이트
+    // DB 업데이트 (원본 URL 저장하여 원복 가능하도록)
     const { data, error } = await supabase
       .from('photos')
       .update({
         is_bg_removed: true,
-        file_url: bgRemovedUrl
+        file_url: bgRemovedUrl,
+        original_url: originalUrl  // 원본 URL 저장
       })
       .eq('id', photoId)
       .select()

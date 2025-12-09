@@ -31,11 +31,15 @@ CREATE TABLE photos (
   hour INT NOT NULL CHECK (hour >= 0 AND hour <= 23),
   user_id TEXT NOT NULL,
   is_bg_removed BOOLEAN DEFAULT FALSE,
+  original_url TEXT,  -- 배경제거 전 원본 URL (원복용)
   position JSONB,
   scale FLOAT DEFAULT 1,
   rotation FLOAT DEFAULT 0,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- 기존 테이블이 있다면 이 명령으로 컬럼 추가:
+-- ALTER TABLE photos ADD COLUMN IF NOT EXISTS original_url TEXT;
 ```
 
 #### Storage 버킷 생성
@@ -83,6 +87,7 @@ npm run dev
 - ✅ 사진 확대/축소 (마우스 휠 또는 핀치)
 - ✅ 사진 회전 (두 손가락 제스처)
 - ✅ 배경 제거(누끼) 기능 (Python rembg 서버 연동)
+- ✅ 배경제거한 사진 원복 기능 (원본으로 되돌리기)
 - ✅ 텍스트 추가 및 꾸미기
 
 ## 파일 구조
@@ -100,8 +105,10 @@ piclog/
 ├── pages/
 │   ├── api/
 │   │   └── photos/
-│   │       ├── upload.ts     # 업로드 API
-│   │       └── remove-bg.ts  # 배경 제거 API
+│   │       ├── upload.ts          # 업로드 API
+│   │       ├── remove-bg.ts       # 배경 제거 API
+│   │       ├── restore-original.ts # 원복 API
+│   │       └── delete.ts          # 삭제 API
 │   ├── _app.tsx
 │   ├── _document.tsx
 │   └── index.tsx             # 메인 페이지

@@ -137,13 +137,19 @@ export default function Timeline({ refreshTrigger, currentDate, onDateChange, ex
     const guestId = getGuestId();
     const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
 
+    // 해당 시간대의 baseY 계산 (텍스트가 올바른 위치에 나타나도록)
+    const groupIndex = groupedPhotos.findIndex(g => g.hour === contextMenuHour);
+    const baseY = groupIndex >= 0
+      ? groupedPhotos.slice(0, groupIndex).reduce((sum, g) => sum + (g.height || 250), 0)
+      : 0;
+
     const { data, error } = await supabase
       .from("text_objects")
       .insert({
         user_id: guestId,
         hour: contextMenuHour,
         text: text.trim(),
-        position: { x: 100, y: 50 },
+        position: { x: 100, y: baseY + 50 },  // baseY 기준 상대 위치로 저장
         scale: 1,
         rotation: 0,
         date: dateStr,
@@ -162,7 +168,7 @@ export default function Timeline({ refreshTrigger, currentDate, onDateChange, ex
         id: data.id,
         hour: data.hour,
         text: data.text,
-        position: data.position || { x: 100, y: 50 },
+        position: data.position || { x: 100, y: baseY + 50 },
         scale: data.scale || 1,
         rotation: data.rotation || 0,
       };
@@ -259,6 +265,30 @@ export default function Timeline({ refreshTrigger, currentDate, onDateChange, ex
       console.error("Remove BG error:", error);
       setIsRemovingBg(false);
       alert("배경 제거 중 오류가 발생했습니다.");
+    }
+  };
+
+  const handlePhotoRestore = async (photoId: string) => {
+    try {
+      setIsRemovingBg(true);
+      console.log("Restoring original image for:", photoId);
+      const res = await fetch("/api/photos/restore-original", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ photoId }),
+      });
+      const json = await res.json();
+      console.log("Restore response:", json);
+      setIsRemovingBg(false);
+      if (json.success) {
+        loadTimeline();
+      } else {
+        alert(`원복 실패: ${json.message}`);
+      }
+    } catch (error) {
+      console.error("Restore error:", error);
+      setIsRemovingBg(false);
+      alert("원복 중 오류가 발생했습니다.");
     }
   };
 
@@ -392,6 +422,7 @@ export default function Timeline({ refreshTrigger, currentDate, onDateChange, ex
                 onUpdate={handlePhotoUpdate}
                 onDelete={handlePhotoDelete}
                 onRemoveBg={handlePhotoRemoveBg}
+                onRestore={handlePhotoRestore}
               />
             ));
           })}
