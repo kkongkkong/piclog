@@ -71,10 +71,27 @@ export function extractTimestampFromFilename(filename: string): Date | null {
 
   // 파일명의 시간은 KST 기준이므로 UTC로 변환
   // ISO 문자열로 만들어서 Date 객체 생성 (UTC 기준으로 해석됨)
-  const kstIsoString = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}T${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}:${second.toString().padStart(2, '0')}+09:00`
-  const timestamp = new Date(kstIsoString)
-  console.log('✅ Galaxy filename pattern found (KST):', kstIsoString, '→ UTC:', timestamp.toISOString())
-  return timestamp
+  try {
+    const monthStr = month.toString().padStart(2, '0')
+    const dayStr = day.toString().padStart(2, '0')
+    const hourStr = hour.toString().padStart(2, '0')
+    const minuteStr = minute.toString().padStart(2, '0')
+    const secondStr = second.toString().padStart(2, '0')
+
+    const kstIsoString = `${year}-${monthStr}-${dayStr}T${hourStr}:${minuteStr}:${secondStr}+09:00`
+    const timestamp = new Date(kstIsoString)
+
+    if (isNaN(timestamp.getTime())) {
+      console.error('Invalid date generated from filename:', kstIsoString)
+      return null
+    }
+
+    console.log('✅ Galaxy filename pattern found (KST):', kstIsoString, '→ UTC:', timestamp.toISOString())
+    return timestamp
+  } catch (error) {
+    console.error('Error creating timestamp from filename:', error)
+    return null
+  }
 }
 
 // 3. File lastModified에서 타임스탬프 추출 (PC 업로드 이미지 fallback)

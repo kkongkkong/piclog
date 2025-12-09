@@ -49,7 +49,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.log('Last modified:', lastModifiedStr)
 
     // 파일 확장자 검증
-    const fileExt = filename.toLowerCase().match(/\.[^.]+$/)?.[0] || ''
+    const fileExtMatch = filename.match(/\.[^.]+$/)
+    if (!fileExtMatch) {
+      return res.status(400).json({
+        success: false,
+        message: '파일 확장자를 확인할 수 없습니다.'
+      })
+    }
+
+    const fileExt = fileExtMatch[0].toLowerCase()
     if (!ALLOWED_EXTENSIONS.includes(fileExt)) {
       return res.status(400).json({
         success: false,
@@ -87,43 +95,65 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // 4️⃣ targetDate (사용자 선택 날짜)
     if (!timestamp && targetDateStr) {
-      console.log('Using target date from user selection')
-      const targetDate = new Date(targetDateStr)
+      try {
+        console.log('Using target date from user selection')
+        const targetDate = new Date(targetDateStr)
 
-      // 현재 UTC 시간을 KST로 변환 (UTC + 9시간)
-      const nowUtc = new Date()
-      const nowKst = new Date(nowUtc.getTime() + (9 * 60 * 60 * 1000))
+        // 현재 UTC 시간을 KST로 변환 (UTC + 9시간)
+        const nowUtc = new Date()
+        const nowKst = new Date(nowUtc.getTime() + (9 * 60 * 60 * 1000))
 
-      // targetDate의 날짜 + 현재 KST 시간
-      const year = targetDate.getFullYear()
-      const month = (targetDate.getMonth() + 1).toString().padStart(2, '0')
-      const day = targetDate.getDate().toString().padStart(2, '0')
-      const hour = nowKst.getUTCHours().toString().padStart(2, '0')
-      const minute = nowKst.getUTCMinutes().toString().padStart(2, '0')
-      const second = nowKst.getUTCSeconds().toString().padStart(2, '0')
+        // targetDate의 날짜 + 현재 KST 시간
+        const year = targetDate.getFullYear()
+        const month = (targetDate.getMonth() + 1).toString().padStart(2, '0')
+        const day = targetDate.getDate().toString().padStart(2, '0')
+        const hour = nowKst.getUTCHours().toString().padStart(2, '0')
+        const minute = nowKst.getUTCMinutes().toString().padStart(2, '0')
+        const second = nowKst.getUTCSeconds().toString().padStart(2, '0')
 
-      const kstIsoString = `${year}-${month}-${day}T${hour}:${minute}:${second}+09:00`
-      timestamp = new Date(kstIsoString)
-      console.log('📅 Generated timestamp from target date (KST):', kstIsoString, '→ UTC:', timestamp.toISOString())
+        const kstIsoString = `${year}-${month}-${day}T${hour}:${minute}:${second}+09:00`
+        timestamp = new Date(kstIsoString)
+
+        if (isNaN(timestamp.getTime())) {
+          console.error('Invalid date generated from targetDate:', kstIsoString)
+          timestamp = null
+        } else {
+          console.log('📅 Generated timestamp from target date (KST):', kstIsoString, '→ UTC:', timestamp.toISOString())
+        }
+      } catch (error) {
+        console.error('Error generating timestamp from targetDate:', error)
+        timestamp = null
+      }
     }
 
     // 5️⃣ 현재 시간 (최후 fallback)
     if (!timestamp) {
-      console.log('⚠️ Using current time as final fallback (KST)')
-      // 현재 UTC 시간을 KST로 변환 (UTC + 9시간)
-      const nowUtc = new Date()
-      const nowKst = new Date(nowUtc.getTime() + (9 * 60 * 60 * 1000))
+      try {
+        console.log('⚠️ Using current time as final fallback (KST)')
+        // 현재 UTC 시간을 KST로 변환 (UTC + 9시간)
+        const nowUtc = new Date()
+        const nowKst = new Date(nowUtc.getTime() + (9 * 60 * 60 * 1000))
 
-      const year = nowKst.getUTCFullYear()
-      const month = (nowKst.getUTCMonth() + 1).toString().padStart(2, '0')
-      const day = nowKst.getUTCDate().toString().padStart(2, '0')
-      const hour = nowKst.getUTCHours().toString().padStart(2, '0')
-      const minute = nowKst.getUTCMinutes().toString().padStart(2, '0')
-      const second = nowKst.getUTCSeconds().toString().padStart(2, '0')
+        const year = nowKst.getUTCFullYear()
+        const month = (nowKst.getUTCMonth() + 1).toString().padStart(2, '0')
+        const day = nowKst.getUTCDate().toString().padStart(2, '0')
+        const hour = nowKst.getUTCHours().toString().padStart(2, '0')
+        const minute = nowKst.getUTCMinutes().toString().padStart(2, '0')
+        const second = nowKst.getUTCSeconds().toString().padStart(2, '0')
 
-      const kstIsoString = `${year}-${month}-${day}T${hour}:${minute}:${second}+09:00`
-      timestamp = new Date(kstIsoString)
-      console.log('🕐 Generated KST timestamp:', kstIsoString, '→ UTC:', timestamp.toISOString())
+        const kstIsoString = `${year}-${month}-${day}T${hour}:${minute}:${second}+09:00`
+        timestamp = new Date(kstIsoString)
+
+        if (isNaN(timestamp.getTime())) {
+          console.error('Invalid date generated from current time:', kstIsoString)
+          return res.status(500).json({ success: false, message: 'Failed to generate timestamp' })
+        }
+
+        console.log('🕐 Generated KST timestamp:', kstIsoString, '→ UTC:', timestamp.toISOString())
+      } catch (error: any) {
+        console.error('Error generating current timestamp:', error)
+        return res.status(500).json({ success: false, message: error.message || 'Timestamp generation failed' })
+      }
     }
 
     const hour = getHourFromTimestamp(timestamp)
