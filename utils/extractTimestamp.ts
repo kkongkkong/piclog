@@ -18,16 +18,27 @@ export function extractTimestampFromExif(buffer: Buffer): Date | null {
     // EXIF에서 촬영 시간 가져오기 (iPhone, Galaxy 모두 지원)
     if (result.tags?.DateTimeOriginal) {
       // DateTimeOriginal은 Unix timestamp (초 단위)
-      const timestamp = new Date(result.tags.DateTimeOriginal * 1000)
-      console.log('✅ EXIF DateTimeOriginal found:', timestamp.toISOString())
-      return timestamp
+      // 하지만 EXIF는 타임존 정보 없이 로컬 시간만 저장
+      // exif-parser는 이를 UTC로 해석하므로, KST 오프셋을 빼야 함
+      const utcTimestamp = new Date(result.tags.DateTimeOriginal * 1000)
+
+      // EXIF 시간이 KST 로컬 시간이라고 가정하고 UTC로 변환
+      // UTC로 해석된 시간에서 -9시간 (KST가 실제로는 로컬 시간이었으므로)
+      const kstTimestamp = new Date(utcTimestamp.getTime() - (9 * 60 * 60 * 1000))
+
+      console.log('✅ EXIF DateTimeOriginal found (UTC interpreted):', utcTimestamp.toISOString())
+      console.log('   Adjusted to KST local time:', kstTimestamp.toISOString())
+      return kstTimestamp
     }
 
     // CreateDate도 확인
     if (result.tags?.CreateDate) {
-      const timestamp = new Date(result.tags.CreateDate * 1000)
-      console.log('✅ EXIF CreateDate found:', timestamp.toISOString())
-      return timestamp
+      const utcTimestamp = new Date(result.tags.CreateDate * 1000)
+      const kstTimestamp = new Date(utcTimestamp.getTime() - (9 * 60 * 60 * 1000))
+
+      console.log('✅ EXIF CreateDate found (UTC interpreted):', utcTimestamp.toISOString())
+      console.log('   Adjusted to KST local time:', kstTimestamp.toISOString())
+      return kstTimestamp
     }
 
     return null
