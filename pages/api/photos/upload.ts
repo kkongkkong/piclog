@@ -2,13 +2,22 @@ import { NextApiRequest, NextApiResponse } from 'next'
 import formidable from 'formidable'
 import fs from 'fs'
 import { supabase } from '@/lib/supabase'
-import { extractTimestamp, getHourFromTimestamp } from '@/utils/extractTimestamp'
+import {
+  extractTimestampFromExif,
+  extractTimestampFromFilename,
+  extractTimestampFromLastModified,
+  getHourFromTimestamp
+} from '@/utils/extractTimestamp'
 
 export const config = {
   api: {
     bodyParser: false,
   },
 }
+
+// 허용 확장자 (HEIC, WEBP 포함)
+const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.heic', '.webp']
+const MAX_FILE_SIZE = 15 * 1024 * 1024 // 15MB
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -18,7 +27,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const form = formidable({
       keepExtensions: true,
-      maxFileSize: 10 * 1024 * 1024, // 10MB
+      maxFileSize: MAX_FILE_SIZE,
     })
     const [fields, files] = await form.parse(req)
 
@@ -32,39 +41,89 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const guestId = fields.guestId?.[0] || 'guest'
     const targetDateStr = fields.targetDate?.[0] // 선택된 날짜
+    const lastModifiedStr = fields.lastModified?.[0] // 파일의 lastModified
     const filename = file.originalFilename || 'unknown.jpg'
 
     console.log('Processing file:', filename)
     console.log('Target date:', targetDateStr)
+    console.log('Last modified:', lastModifiedStr)
 
-    // 파일명에서 timestamp 추출, 실패하면 targetDate 또는 현재 시간 사용
-    let timestamp = extractTimestamp(filename)
+    // 파일 확장자 검증
+    const fileExt = filename.toLowerCase().match(/\.[^.]+$/)?.[0] || ''
+    if (!ALLOWED_EXTENSIONS.includes(fileExt)) {
+      return res.status(400).json({
+        success: false,
+        message: `허용되지 않는 파일 형식입니다. (${fileExt})\n허용 형식: JPG, PNG, HEIC, WEBP`
+      })
+    }
+
+    // 파일 버퍼 읽기 (EXIF 추출 및 업로드에 사용)
+    const fileBuffer = fs.readFileSync(file.filepath)
+
+    /**
+     * 통합 타임스탬프 추출 로직 (우선순위)
+     * 1. EXIF DateTimeOriginal (최우선 - iPhone, Galaxy 모두)
+     * 2. 파일명 패턴 (Galaxy: YYYYMMDD_HHMMSS)
+     * 3. File lastModified (PC 업로드 이미지)
+     * 4. targetDate (사용자 선택 날짜 + 현재 시간)
+     * 5. 현재 시간 (최후 fallback)
+     */
+    let timestamp: Date | null = null
+
+    // 1️⃣ EXIF DateTimeOriginal (최우선)
+    timestamp = extractTimestampFromExif(fileBuffer)
+
+    // 2️⃣ Galaxy 파일명 패턴 (YYYYMMDD_HHMMSS)
     if (!timestamp) {
-      if (targetDateStr) {
-        // targetDate가 있으면 해당 날짜의 현재 시간 사용
-        console.log('Using target date from user selection')
-        const targetDate = new Date(targetDateStr)
-        const now = new Date()
+      console.log('No EXIF data, trying filename pattern')
+      timestamp = extractTimestampFromFilename(filename)
+    }
 
-        // targetDate의 날짜에 현재 시간을 조합
-        timestamp = new Date(
-          targetDate.getFullYear(),
-          targetDate.getMonth(),
-          targetDate.getDate(),
-          now.getHours(),
-          now.getMinutes(),
-          now.getSeconds()
-        )
-        console.log('Generated timestamp from target date:', timestamp.toISOString())
-      } else {
-        // targetDate도 없으면 현재 시간 사용 (한국 시간)
-        console.log('Failed to extract timestamp from filename, using current time (KST)')
-        const now = new Date()
-        const kstOffset = 9 * 60 * 60 * 1000 // 9시간을 밀리초로
-        const utcTime = now.getTime() + (now.getTimezoneOffset() * 60 * 1000)
-        timestamp = new Date(utcTime + kstOffset)
-        console.log('Generated KST timestamp:', timestamp.toISOString())
-      }
+    // 3️⃣ File lastModified (PC 업로드)
+    if (!timestamp && lastModifiedStr) {
+      console.log('No filename pattern, trying lastModified')
+      timestamp = extractTimestampFromLastModified(parseInt(lastModifiedStr))
+    }
+
+    // 4️⃣ targetDate (사용자 선택 날짜)
+    if (!timestamp && targetDateStr) {
+      console.log('Using target date from user selection')
+      const targetDate = new Date(targetDateStr)
+
+      // 현재 UTC 시간을 KST로 변환 (UTC + 9시간)
+      const nowUtc = new Date()
+      const nowKst = new Date(nowUtc.getTime() + (9 * 60 * 60 * 1000))
+
+      // targetDate의 날짜 + 현재 KST 시간
+      const year = targetDate.getFullYear()
+      const month = (targetDate.getMonth() + 1).toString().padStart(2, '0')
+      const day = targetDate.getDate().toString().padStart(2, '0')
+      const hour = nowKst.getUTCHours().toString().padStart(2, '0')
+      const minute = nowKst.getUTCMinutes().toString().padStart(2, '0')
+      const second = nowKst.getUTCSeconds().toString().padStart(2, '0')
+
+      const kstIsoString = `${year}-${month}-${day}T${hour}:${minute}:${second}+09:00`
+      timestamp = new Date(kstIsoString)
+      console.log('📅 Generated timestamp from target date (KST):', kstIsoString, '→ UTC:', timestamp.toISOString())
+    }
+
+    // 5️⃣ 현재 시간 (최후 fallback)
+    if (!timestamp) {
+      console.log('⚠️ Using current time as final fallback (KST)')
+      // 현재 UTC 시간을 KST로 변환 (UTC + 9시간)
+      const nowUtc = new Date()
+      const nowKst = new Date(nowUtc.getTime() + (9 * 60 * 60 * 1000))
+
+      const year = nowKst.getUTCFullYear()
+      const month = (nowKst.getUTCMonth() + 1).toString().padStart(2, '0')
+      const day = nowKst.getUTCDate().toString().padStart(2, '0')
+      const hour = nowKst.getUTCHours().toString().padStart(2, '0')
+      const minute = nowKst.getUTCMinutes().toString().padStart(2, '0')
+      const second = nowKst.getUTCSeconds().toString().padStart(2, '0')
+
+      const kstIsoString = `${year}-${month}-${day}T${hour}:${minute}:${second}+09:00`
+      timestamp = new Date(kstIsoString)
+      console.log('🕐 Generated KST timestamp:', kstIsoString, '→ UTC:', timestamp.toISOString())
     }
 
     const hour = getHourFromTimestamp(timestamp)
@@ -89,7 +148,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Supabase Storage에 업로드
-    const fileBuffer = fs.readFileSync(file.filepath)
     const storagePath = `${guestId}/${Date.now()}_${filename}`
 
     const { data: uploadData, error: uploadError } = await supabase.storage
@@ -111,15 +169,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const fileUrl = urlData.publicUrl
 
     // DB에 저장
-    // timestamp를 한국 시간 기준으로 저장 (toISOString은 UTC로 변환하므로 조정 필요)
-    const kstTimestamp = new Date(timestamp.getTime() - (9 * 60 * 60 * 1000)).toISOString()
-    console.log('Saving to DB - Original KST:', timestamp, 'Adjusted for DB:', kstTimestamp)
+    // timestamp는 이미 로컬 시간(KST) 기준 Date 객체
+    // toISOString()은 자동으로 UTC로 변환하므로 그대로 사용
+    const isoTimestamp = timestamp.toISOString()
+    console.log('Saving to DB - Local time:', timestamp.toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }), 'ISO (UTC):', isoTimestamp)
 
     const { data: photoData, error: insertError } = await supabase
       .from('photos')
       .insert({
         file_url: fileUrl,
-        timestamp: kstTimestamp,
+        timestamp: isoTimestamp,
         hour,
         user_id: guestId,
       })

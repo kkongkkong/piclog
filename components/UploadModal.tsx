@@ -42,6 +42,11 @@ export default function UploadModal({ onClose, onUploadSuccess, onUploadingChang
         formData.append('file', file)
         formData.append('guestId', guestId)
 
+        // 파일의 lastModified 전달 (PC 업로드 이미지용)
+        if (file.lastModified) {
+          formData.append('lastModified', file.lastModified.toString())
+        }
+
         if (currentDate) {
           formData.append('targetDate', currentDate.toISOString())
         }
@@ -91,7 +96,7 @@ export default function UploadModal({ onClose, onUploadSuccess, onUploadingChang
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/*"
+            accept="image/jpeg,image/jpg,image/png,image/heic,image/webp"
             multiple
             onChange={handleFileChange}
             className="hidden"
