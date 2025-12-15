@@ -27,10 +27,18 @@ export default function TimelineText({ textObject, baseY, onUpdate, onDelete }: 
       id={textObject.id}
       isTimeline={false}
       defaultX={textObject.position?.x || 100}
-      defaultY={textObject.position?.y || baseY}
+      defaultY={baseY + (textObject.position?.y || 50)}  // 절대 좌표 = baseY + 상대 좌표
       defaultScale={textObject.scale || 1}
       defaultRotation={textObject.rotation || 0}
-      onChange={(updates) => onUpdate(textObject.id, updates)}
+      onChange={(updates) => {
+        // 절대 좌표를 상대 좌표로 변환하여 저장
+        const relativeUpdates = {
+          position: { x: updates.x, y: updates.y - baseY },  // 상대 좌표 = 절대 좌표 - baseY
+          scale: updates.scale,
+          rotation: updates.rotation
+        };
+        onUpdate(textObject.id, relativeUpdates);
+      }}
     >
       {(selected) => (
         <div className="timeline-text-sticker">

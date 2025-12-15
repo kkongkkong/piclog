@@ -137,19 +137,14 @@ export default function Timeline({ refreshTrigger, currentDate, onDateChange, ex
     const guestId = getGuestId();
     const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
 
-    // 해당 시간대의 baseY 계산 (텍스트가 올바른 위치에 나타나도록)
-    const groupIndex = groupedPhotos.findIndex(g => g.hour === contextMenuHour);
-    const baseY = groupIndex >= 0
-      ? groupedPhotos.slice(0, groupIndex).reduce((sum, g) => sum + (g.height || 250), 0)
-      : 0;
-
+    // 시간대 내 상대 위치로 저장 (절대 좌표가 아닌 시간대 기준 상대 위치)
     const { data, error } = await supabase
       .from("text_objects")
       .insert({
         user_id: guestId,
         hour: contextMenuHour,
         text: text.trim(),
-        position: { x: 100, y: baseY + 50 },  // baseY 기준 상대 위치로 저장
+        position: { x: 100, y: 50 },  // 시간대 내 상대 위치로 저장
         scale: 1,
         rotation: 0,
         date: dateStr,
@@ -168,7 +163,7 @@ export default function Timeline({ refreshTrigger, currentDate, onDateChange, ex
         id: data.id,
         hour: data.hour,
         text: data.text,
-        position: data.position || { x: 100, y: baseY + 50 },
+        position: data.position || { x: 100, y: 50 },
         scale: data.scale || 1,
         rotation: data.rotation || 0,
       };

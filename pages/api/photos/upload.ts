@@ -159,21 +159,44 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const hour = getHourFromTimestamp(timestamp)
     console.log('Extracted hour:', hour, 'from timestamp:', timestamp.toISOString())
 
-    // 시간대별 3장 초과 체크
+    // 시간대별 3장 초과 체크 (같은 날짜 내에서만)
+    // timestamp의 날짜 범위 계산 (KST 기준)
+    const kstTimestamp = new Date(timestamp.getTime() + (9 * 60 * 60 * 1000))
+    const year = kstTimestamp.getUTCFullYear()
+    const month = kstTimestamp.getUTCMonth()
+    const day = kstTimestamp.getUTCDate()
+
+    const startOfDay = new Date(Date.UTC(year, month, day, 0, 0, 0, 0))
+    startOfDay.setHours(startOfDay.getHours() - 9) // KST → UTC
+
+    const endOfDay = new Date(Date.UTC(year, month, day, 23, 59, 59, 999))
+    endOfDay.setHours(endOfDay.getHours() - 9) // KST → UTC
+
+    console.log(`📊 Checking photo count for hour ${hour} on date range:`, {
+      startOfDay: startOfDay.toISOString(),
+      endOfDay: endOfDay.toISOString(),
+      kstDate: `${year}-${month+1}-${day}`
+    })
+
     const { data: existingPhotos, error: countError } = await supabase
       .from('photos')
-      .select('id')
+      .select('id, timestamp')
       .eq('user_id', guestId)
       .eq('hour', hour)
+      .gte('timestamp', startOfDay.toISOString())
+      .lte('timestamp', endOfDay.toISOString())
+
+    console.log(`📊 Found ${existingPhotos?.length || 0} existing photos:`, existingPhotos)
 
     if (countError) {
+      console.error('Count error:', countError)
       return res.status(500).json({ success: false, message: 'Database error' })
     }
 
     if (existingPhotos && existingPhotos.length >= 3) {
       return res.status(400).json({
         success: false,
-        message: `Maximum 3 photos per hour slot (hour ${hour})`
+        message: `Maximum 3 photos per hour slot (hour ${hour}) on ${year}-${month+1}-${day}`
       })
     }
 
