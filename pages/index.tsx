@@ -3,6 +3,7 @@ import Head from 'next/head'
 import Timeline from '@/components/Timeline'
 import Calendar from '@/components/Calendar'
 import UploadBox from '@/components/UploadBox'
+import CameraButton from '@/components/CameraButton'
 import Onboarding from '@/components/Onboarding'
 
 export default function Home() {
@@ -77,6 +78,7 @@ export default function Home() {
           <span className="text-2xl">📆</span>
           <span className="text-sm font-medium">캘린더 보기</span>
         </button>
+        <CameraButton onUploadSuccess={handleUploadSuccess} currentDate={currentDate} />
         <UploadBox onUploadSuccess={handleUploadSuccess} currentDate={currentDate} />
         <button
           className="nav-button"

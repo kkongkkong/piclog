@@ -84,7 +84,7 @@ body {
   gap: 2px;
   transition: all 0.2s;
   flex: 1;
-  max-width: 90px;
+  max-width: 80px;
   color: #666;
 }
 
