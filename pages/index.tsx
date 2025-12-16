@@ -25,11 +25,14 @@ export default function Home() {
   const handleUploadSuccess = () => {
     setRefreshTrigger((prev) => prev + 1)
 
-    // 첫 사진 업로드 후 설문조사 모달 표시
+    // 첫 사진 업로드 후 5~7초 뒤 설문조사 모달 표시
     const hasSeenSurvey = localStorage.getItem('piclog_survey_shown')
     if (!hasSeenSurvey) {
-      setShowSurveyModal(true)
-      localStorage.setItem('piclog_survey_shown', 'true')
+      const delay = 5000 + Math.random() * 2000 // 5~7초 랜덤
+      setTimeout(() => {
+        setShowSurveyModal(true)
+        localStorage.setItem('piclog_survey_shown', 'true')
+      }, delay)
     }
   }
 

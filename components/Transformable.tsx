@@ -59,9 +59,9 @@ export default function Transformable({
     onChange(newTransform);
   };
 
-  // 외부 클릭 감지
+  // 외부 클릭 감지 (iOS 터치 이벤트 지원)
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setSelected(false);
       }
@@ -69,10 +69,12 @@ export default function Transformable({
 
     if (selected) {
       document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("touchstart", handleClickOutside);
     }
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
     };
   }, [selected]);
 
@@ -110,6 +112,12 @@ export default function Transformable({
   const handleContentMouseDown = (e: React.MouseEvent) => {
     if (!selected) return;
     if (e.target !== contentRef.current && !contentRef.current?.contains(e.target as Node)) return;
+
+    // 버튼 클릭 시 드래그 방지 (iOS 호환성)
+    const target = e.target as HTMLElement;
+    if (target.tagName === 'BUTTON' || target.closest('button')) {
+      return;
+    }
 
     e.preventDefault();
     e.stopPropagation();
@@ -220,18 +228,28 @@ export default function Transformable({
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
+    // 버튼 터치 시 이벤트 처리 방지 (iOS 버튼 클릭 개선)
+    const target = e.target as HTMLElement;
+    if (target.tagName === 'BUTTON' || target.closest('button')) {
+      return;
+    }
+
+    // iOS에서 첫 터치 시 선택 상태로 변경
     if (!selected) {
+      e.stopPropagation();
       setSelected(true);
       return;
     }
 
     if (e.touches.length === 2) {
       e.preventDefault();
+      e.stopPropagation();
       lastTouchDistance.current = getTouchDistance(e.touches);
       lastTouchAngle.current = getTouchAngle(e.touches);
       initialTransform.current = { scale: transform.scale, rotation: transform.rotation };
       setInteractionMode('resize');
     } else if (e.touches.length === 1) {
+      e.stopPropagation();
       dragStart.current = {
         x: e.touches[0].clientX - transform.x,
         y: e.touches[0].clientY - transform.y,

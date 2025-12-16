@@ -230,13 +230,19 @@ body {
 }
 
 .timeline-action-btn {
-  padding: 6px 14px;
-  border-radius: 4px;
+  padding: 8px 16px;
+  min-height: 36px;
+  border-radius: 6px;
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
   border: 1px solid #333;
   transition: all 0.2s;
+  /* iOS 터치 개선 */
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
 }
 
 .timeline-action-btn.bg-remove {
