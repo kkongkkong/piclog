@@ -5,6 +5,7 @@ import Calendar from '@/components/Calendar'
 import UploadBox from '@/components/UploadBox'
 import CameraButton from '@/components/CameraButton'
 import Onboarding from '@/components/Onboarding'
+import SurveyModal from '@/components/SurveyModal'
 
 export default function Home() {
   const [refreshTrigger, setRefreshTrigger] = useState(0)
@@ -12,6 +13,7 @@ export default function Home() {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [showTextModal, setShowTextModal] = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(false)
+  const [showSurveyModal, setShowSurveyModal] = useState(false)
 
   useEffect(() => {
     const hasSeenOnboarding = localStorage.getItem('piclog_onboarding_seen')
@@ -22,6 +24,17 @@ export default function Home() {
 
   const handleUploadSuccess = () => {
     setRefreshTrigger((prev) => prev + 1)
+
+    // 첫 사진 업로드 후 설문조사 모달 표시
+    const hasSeenSurvey = localStorage.getItem('piclog_survey_shown')
+    if (!hasSeenSurvey) {
+      setShowSurveyModal(true)
+      localStorage.setItem('piclog_survey_shown', 'true')
+    }
+  }
+
+  const handleSurveyClose = () => {
+    setShowSurveyModal(false)
   }
 
   const handleDateSelect = (date: Date) => {
@@ -103,6 +116,14 @@ export default function Home() {
             Piclog가 더 좋아질 수 있도록 의견을 들려주세요!
           </div>
           <a
+            href="https://forms.gle/rkGMQH1hdM5qfBu6A"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="feedback-link"
+          >
+            → 이용 만족도 조사
+          </a>
+          <a
             href="https://forms.gle/7VaxGnDrMigQoZTLA"
             target="_blank"
             rel="noopener noreferrer"
@@ -130,6 +151,7 @@ export default function Home() {
     </div>
 
     {showOnboarding && <Onboarding onStart={handleOnboardingStart} />}
+    {showSurveyModal && <SurveyModal onClose={handleSurveyClose} />}
     </>
   )
 }
