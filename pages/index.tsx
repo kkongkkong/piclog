@@ -121,7 +121,7 @@ export default function Home() {
             rel="noopener noreferrer"
             className="feedback-link"
           >
-            → 이용 만족도 조사
+            ✅이용 만족도 조사
           </a>
           <a
             href="https://forms.gle/7VaxGnDrMigQoZTLA"
@@ -129,7 +129,7 @@ export default function Home() {
             rel="noopener noreferrer"
             className="feedback-link"
           >
-            → 의견 보내기
+            ✅의견 보내기
           </a>
         </div>
         <p style={{
