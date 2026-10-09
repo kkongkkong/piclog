@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import formidable from 'formidable'
 import fs from 'fs'
+import { randomUUID } from 'crypto'
 import { supabase } from '@/lib/supabase'
 import {
   extractTimestampFromExif,
@@ -201,7 +202,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Supabase Storage에 업로드
-    const storagePath = `${guestId}/${Date.now()}_${filename}`
+    const storagePath = `${guestId}/${randomUUID()}${fileExt}`
 
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('photos')
